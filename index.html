@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>A Special Blessing 🌙</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* Stylings kept from your original design for the Islamic aesthetic */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --gold: #c9a84c; --gold-light: #f0d080; --deep: #1a0e2e;
+    --parchment: #f5e6c8; --boy-blue: #1565c0; --girl-pink: #c2185b;
+  }
+
+  body {
+    background: var(--deep);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Amiri', serif;
+    overflow-x: hidden;
+    padding: 20px;
+  }
+
+  .container { position: relative; z-index: 2; max-width: 400px; width: 100%; text-align: center; }
+  .bismillah { font-size: 1.8rem; color: var(--gold-light); margin: 10px 0; }
+  .title { font-family: 'Cinzel Decorative', serif; color: var(--gold); font-size: 1.4rem; margin-bottom: 20px; }
+
+  /* Scratch Card Container */
+  .card-wrapper {
+    width: 100%;
+    aspect-ratio: 3/4;
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5), 0 0 0 3px var(--gold);
+    background: #2d1a4a;
+  }
+
+  canvas { position: absolute; top: 0; left: 0; z-index: 10; cursor: crosshair; touch-action: none; }
+
+  .reveal-layer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    padding: 20px;
+  }
+
+  /* Interactive Buttons */
+  .btn-group { margin-top: 25px; display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  
+  .share-btn {
+    display: none; /* Hidden until reveal */
+    background: #25D366; /* WhatsApp Green */
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 50px;
+    font-weight: bold;
+    text-decoration: none;
+    font-family: sans-serif;
+  }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 10px;
+    border-radius: 50px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  .reveal-text { font-size: 2.5rem; margin: 10px 0; font-family: 'Cinzel Decorative'; }
+  .dua-text { font-style: italic; font-size: 1rem; opacity: 0.9; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="bismillah">بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+  <div class="title">Our Little Secret...</div>
+
+  <div class="card-wrapper" id="cardWrapper">
+    <div class="reveal-layer" id="revealLayer">
+      <div id="resultContent" style="opacity:0; transition: 1s;">
+        <div style="font-size: 5rem;" id="emoji">👶</div>
+        <div class="reveal-text" id="genderText">It's a Boy!</div>
+        <div class="dua-text">"O Allah, make them a cooling of our eyes and among the righteous."</div>
+      </div>
+    </div>
+    <canvas id="scratchCanvas"></canvas>
+  </div>
+
+  <div class="btn-group">
+    <a href="#" class="share-btn" id="whatsappBtn">Share the News on WhatsApp 📱</a>
+    <button class="reset-btn" onclick="location.reload()">Reset Scratch Card</button>
+  </div>
+</div>
+
+<script>
+/** CONFIGURATION **/
+const isBoy = true; // SET TO FALSE FOR GIRL
+/******************/
+
+const canvas = document.getElementById('scratchCanvas');
+const ctx = canvas.getContext('2d');
+const wrapper = document.getElementById('cardWrapper');
+const result = document.getElementById('resultContent');
+const revealLayer = document.getElementById('revealLayer');
+const whatsappBtn = document.getElementById('whatsappBtn');
+
+function init() {
+  canvas.width = wrapper.offsetWidth;
+  canvas.height = wrapper.offsetHeight;
+
+  // Draw Gold Scratch Layer
+  ctx.fillStyle = '#c9a84c';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Add some texture/text to the scratch layer
+  ctx.fillStyle = '#1a0e2e';
+  ctx.font = '20px Amiri';
+  ctx.textAlign = 'center';
+  ctx.fillText('Scratch to Reveal ✨', canvas.width/2, canvas.height/2);
+
+  // Set Gender Details
+  if(!isBoy) {
+    document.getElementById('genderText').innerText = "It's a Girl!";
+    document.getElementById('emoji').innerText = "🎀";
+    revealLayer.style.background = 'linear-gradient(135deg, #6b0d2e, #c2185b)';
+  } else {
+    revealLayer.style.background = 'linear-gradient(135deg, #0d2b6b, #1565c0)';
+  }
+}
+
+// Scratch Logic
+function scratch(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(x, y, 30, 0, Math.PI * 2);
+  ctx.fill();
+  checkReveal();
+}
+
+function checkReveal() {
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let clearPixels = 0;
+  for (let i = 3; i < imageData.data.length; i += 4) {
+    if (imageData.data[i] === 0) clearPixels++;
+  }
+  
+  // If 40% is scratched, reveal the rest
+  if (clearPixels / (imageData.data.length / 4) > 0.4) {
+    canvas.style.transition = '1s';
+    canvas.style.opacity = '0';
+    result.style.opacity = '1';
+    whatsappBtn.style.display = 'block';
+    
+    // Set up WhatsApp link
+    const text = `Alhamdulillah! We are having a ${isBoy ? 'BOY' : 'GIRL'}! 👶✨`;
+    whatsappBtn.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    
+    setTimeout(() => canvas.remove(), 1000);
+  }
+}
+
+canvas.addEventListener('mousemove', scratch);
+canvas.addEventListener('touchmove', (e) => { e.preventDefault(); scratch(e); }, {passive: false});
+
+window.onload = init;
+</script>
+</body>
+</html>
